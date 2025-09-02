@@ -1,16 +1,19 @@
 from django.core.management.base import BaseCommand
 from django.utils import timezone
+from django.conf import settings
 import google.generativeai as genai
-import os
 from datetime import datetime, timedelta
 from articles.models import Narrative, TimelineEvent, Article
+import environ
+
+env = environ.Env()
 
 
 class Command(BaseCommand):
     help = 'Generate weekly narrative analysis reports'
     
     def handle(self, *args, **options):
-        api_key = os.getenv('GOOGLE_API_KEY')
+        api_key = env('GOOGLE_API_KEY', default=None)
         if not api_key:
             self.stdout.write(
                 self.style.ERROR('GOOGLE_API_KEY environment variable not set')

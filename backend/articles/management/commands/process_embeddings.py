@@ -1,8 +1,11 @@
 from django.core.management.base import BaseCommand
+from django.conf import settings
 import google.generativeai as genai
-import os
 import numpy as np
 from articles.models import Article
+import environ
+
+env = environ.Env()
 
 
 class Command(BaseCommand):
@@ -12,7 +15,7 @@ class Command(BaseCommand):
         parser.add_argument('--batch-size', type=int, default=10, help='Batch size for processing')
     
     def handle(self, *args, **options):
-        api_key = os.getenv('GOOGLE_API_KEY')
+        api_key = env('GOOGLE_API_KEY', default=None)
         if not api_key:
             self.stdout.write(
                 self.style.ERROR('GOOGLE_API_KEY environment variable not set')
