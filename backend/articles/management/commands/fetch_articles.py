@@ -3,9 +3,6 @@ from django.utils import timezone
 from django.conf import settings
 import requests
 from articles.models import Article
-import environ
-
-env = environ.Env()
 
 
 class Command(BaseCommand):
@@ -17,7 +14,7 @@ class Command(BaseCommand):
         parser.add_argument('--limit', type=int, default=50, help='Number of articles to fetch')
     
     def handle(self, *args, **options):
-        api_key = env('NEWSDATA_API_KEY', default=None)
+        api_key = settings.NEWSDATA_API_KEY
         if not api_key:
             self.stdout.write(
                 self.style.ERROR('NEWSDATA_API_KEY environment variable not set')

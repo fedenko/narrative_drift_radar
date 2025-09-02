@@ -21,9 +21,8 @@ services:
       - "8000:8000"
     depends_on:
       - db
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/narrative_drift_radar
-      - DEBUG=1
+    env_file:
+      - .env
 
   frontend:
     build:
