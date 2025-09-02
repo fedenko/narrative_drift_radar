@@ -3,7 +3,8 @@ from django.utils import timezone
 from django.conf import settings
 import google.generativeai as genai
 from datetime import datetime, timedelta
-from articles.models import Narrative, TimelineEvent, Article
+from articles.models import Article
+from narratives.models import Narrative, TimelineEvent
 import environ
 
 env = environ.Env()

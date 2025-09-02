@@ -3,7 +3,8 @@ from django.utils import timezone
 from sklearn.cluster import KMeans
 import numpy as np
 from datetime import datetime, timedelta
-from articles.models import Article, Narrative, NarrativeCluster, TimelineEvent
+from articles.models import Article
+from narratives.models import Narrative, NarrativeCluster, TimelineEvent
 
 
 class Command(BaseCommand):
