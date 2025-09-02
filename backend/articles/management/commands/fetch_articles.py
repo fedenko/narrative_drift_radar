@@ -1,7 +1,8 @@
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 from django.conf import settings
-import requests
+from dateutil import parser
+from newsdataapi import NewsDataApiClient
 from articles.models import Article
 
 
@@ -9,8 +10,9 @@ class Command(BaseCommand):
     help = 'Fetch articles from NewsData.io API'
     
     def add_arguments(self, parser):
-        parser.add_argument('--query', type=str, default='technology AI', help='Search query')
         parser.add_argument('--language', type=str, default='en', help='Language code')
+        parser.add_argument('--country', type=str, default='us', help='Country code')
+        parser.add_argument('--category', type=str, default='politics', help='News category')
         parser.add_argument('--limit', type=int, default=50, help='Number of articles to fetch')
     
     def handle(self, *args, **options):
@@ -21,55 +23,79 @@ class Command(BaseCommand):
             )
             return
         
-        url = 'https://newsdata.io/api/1/news'
-        params = {
-            'apikey': api_key,
-            'q': options['query'],
-            'language': options['language'],
-            'size': min(options['limit'], 10)
-        }
+        # Initialize NewsData API client
+        api_client = NewsDataApiClient(apikey=api_key)
+        
+        articles_created = 0
+        articles_processed = 0
+        page = None
         
         try:
-            response = requests.get(url, params=params)
-            response.raise_for_status()
-            data = response.json()
-            
-            if data['status'] != 'success':
-                self.stdout.write(
-                    self.style.ERROR(f"API error: {data.get('message', 'Unknown error')}")
-                )
-                return
-            
-            articles_created = 0
-            for article_data in data.get('results', []):
-                if not article_data.get('title') or not article_data.get('link'):
-                    continue
+            while articles_processed < options['limit']:
+                # Calculate remaining articles to fetch
+                remaining = options['limit'] - articles_processed
+                size = min(remaining, 10)  # API max is 10 per request
                 
-                try:
-                    article, created = Article.objects.get_or_create(
-                        url=article_data['link'],
-                        defaults={
-                            'title': article_data['title'][:500],
-                            'content': article_data.get('content', '') or article_data.get('description', ''),
-                            'source': article_data.get('source_id', 'unknown'),
-                            'published_date': timezone.now()
-                        }
-                    )
+                # Fetch articles with pagination
+                response = api_client.news_api(
+                    q=None,  # No specific query
+                    language=options['language'],
+                    country=options['country'],
+                    category=options['category'],
+                    page=page,
+                    size=size
+                )
+                
+                # Process articles from response
+                for article_data in response.get('results', []):
+                    if not article_data.get('title') or not article_data.get('link'):
+                        continue
                     
-                    if created:
-                        articles_created += 1
-                        self.stdout.write(f"Created: {article.title[:50]}...")
+                    # Parse published date
+                    published_date = timezone.now()
+                    if article_data.get('pubDate'):
+                        try:
+                            parsed_date = parser.parse(article_data['pubDate'])
+                            # Make timezone-aware if naive
+                            if parsed_date.tzinfo is None:
+                                published_date = timezone.make_aware(parsed_date)
+                            else:
+                                published_date = parsed_date
+                        except (ValueError, TypeError):
+                            published_date = timezone.now()
                     
-                except Exception as e:
-                    self.stdout.write(
-                        self.style.WARNING(f"Failed to create article: {str(e)}")
-                    )
+                    try:
+                        article, created = Article.objects.get_or_create(
+                            url=article_data['link'],
+                            defaults={
+                                'title': article_data['title'][:500],
+                                'content': article_data.get('content', '') or article_data.get('description', ''),
+                                'source': article_data.get('source_id', 'unknown'),
+                                'published_date': published_date
+                            }
+                        )
+                        
+                        if created:
+                            articles_created += 1
+                            self.stdout.write(f"Created: {article.title[:50]}...")
+                        
+                    except Exception as e:
+                        self.stdout.write(
+                            self.style.WARNING(f"Failed to create article: {str(e)}")
+                        )
+                
+                articles_processed += len(response.get('results', []))
+                
+                # Check for next page
+                page = response.get('nextPage')
+                if not page or not response.get('results'):
+                    break
             
             self.stdout.write(
                 self.style.SUCCESS(f'Successfully fetched {articles_created} new articles')
             )
             
-        except requests.RequestException as e:
+        except Exception as e:
             self.stdout.write(
                 self.style.ERROR(f'API request failed: {str(e)}')
             )

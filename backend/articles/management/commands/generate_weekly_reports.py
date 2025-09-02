@@ -5,19 +5,16 @@ import google.generativeai as genai
 from datetime import datetime, timedelta
 from articles.models import Article
 from narratives.models import Narrative, TimelineEvent
-import environ
-
-env = environ.Env()
 
 
 class Command(BaseCommand):
     help = 'Generate weekly narrative analysis reports'
     
     def handle(self, *args, **options):
-        api_key = env('GOOGLE_API_KEY', default=None)
+        api_key = settings.GOOGLE_API_KEY
         if not api_key:
             self.stdout.write(
-                self.style.ERROR('GOOGLE_API_KEY environment variable not set')
+                self.style.ERROR('GOOGLE_API_KEY not configured in settings')
             )
             return
         

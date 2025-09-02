@@ -156,3 +156,4 @@ CORS_ALLOW_CREDENTIALS = True
 
 # API Keys
 NEWSDATA_API_KEY = env('NEWSDATA_API_KEY', default='')
+GOOGLE_API_KEY = env('GOOGLE_API_KEY', default='')
