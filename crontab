@@ -1,0 +1,14 @@
+# Narrative Drift Radar - Automated Tasks
+# Run this with: crontab crontab
+
+# Daily article fetching at 6:00 AM
+0 6 * * * cd /home/kostia/projects/narrative_drift_radar/backend && python manage.py fetch_articles --limit 50
+
+# Process embeddings at 6:30 AM daily
+30 6 * * * cd /home/kostia/projects/narrative_drift_radar/backend && python manage.py process_embeddings --batch-size 10
+
+# Detect narrative shifts at 7:00 AM daily
+0 7 * * * cd /home/kostia/projects/narrative_drift_radar/backend && python manage.py detect_narrative_shifts --days 7 --clusters 5
+
+# Generate weekly reports every Monday at 8:00 AM
+0 8 * * 1 cd /home/kostia/projects/narrative_drift_radar/backend && python manage.py generate_weekly_reports
