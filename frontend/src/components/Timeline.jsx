@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 
 const eventTypeColors = {
   emergence: 'bg-green-100 text-green-800 border-green-200',
@@ -15,13 +16,14 @@ const eventTypeIcons = {
 }
 
 function Timeline({ events, pagination, onLoadMore, loadingMore }) {
+  const { t, i18n } = useTranslation()
   if (!events || events.length === 0) {
     return (
       <div className="text-center py-8">
         <div className="text-gray-400 text-lg mb-2">📊</div>
-        <p className="text-gray-500">No timeline events available yet.</p>
+        <p className="text-gray-500">{t('No timeline events available yet.')}</p>
         <p className="text-sm text-gray-400 mt-1">
-          Run the data processing commands to generate narrative events.
+          {t('Run the data processing commands to generate narrative events.')}
         </p>
       </div>
     )
@@ -29,7 +31,8 @@ function Timeline({ events, pagination, onLoadMore, loadingMore }) {
 
   const formatDate = (dateString) => {
     const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', {
+    const locale = i18n.language === 'uk' ? 'uk-UA' : 'en-US'
+    return date.toLocaleDateString(locale, {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
@@ -70,11 +73,11 @@ function Timeline({ events, pagination, onLoadMore, loadingMore }) {
                   inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
                   ${eventTypeColors[event.event_type] || 'bg-gray-100 text-gray-800'}
                 `}>
-                  {event.event_type?.charAt(0).toUpperCase() + event.event_type?.slice(1) || 'Event'}
+                  {event.event_type ? t(`Narrative ${event.event_type.charAt(0).toUpperCase() + event.event_type.slice(1)}`) : t('Event')}
                 </span>
                 {event.significance_score && (
                   <span className="ml-2 text-xs text-gray-500">
-                    Score: {event.significance_score.toFixed(2)}
+                    {t('Score')}: {event.significance_score.toFixed(2)}
                   </span>
                 )}
               </div>
@@ -82,27 +85,74 @@ function Timeline({ events, pagination, onLoadMore, loadingMore }) {
               <p className="mt-2 text-sm text-gray-600">
                 {event.description}
               </p>
+
+              {/* Quality Metrics */}
+              {event.narrative && (
+                <div className="mt-3 flex flex-wrap gap-4 text-xs">
+                  {event.narrative.source_diversity_score !== undefined && (
+                    <div className="flex items-center space-x-1">
+                      <span className="inline-block w-2 h-2 bg-blue-500 rounded-full"></span>
+                      <span className="font-medium">{t('Diversity')}:</span>
+                      <span className="text-gray-600">{(event.narrative.source_diversity_score * 100).toFixed(0)}%</span>
+                    </div>
+                  )}
+                  {event.narrative.unique_sources_count !== undefined && (
+                    <div className="flex items-center space-x-1">
+                      <span className="inline-block w-2 h-2 bg-green-500 rounded-full"></span>
+                      <span className="font-medium">{t('Sources')}:</span>
+                      <span className="text-gray-600">{event.narrative.unique_sources_count}</span>
+                    </div>
+                  )}
+                  {event.narrative.coherence_score !== undefined && (
+                    <div className="flex items-center space-x-1">
+                      <span className="inline-block w-2 h-2 bg-purple-500 rounded-full"></span>
+                      <span className="font-medium">{t('Coherence')}:</span>
+                      <span className="text-gray-600">{(event.narrative.coherence_score * 100).toFixed(0)}%</span>
+                    </div>
+                  )}
+                  {event.narrative.support_count !== undefined && (
+                    <div className="flex items-center space-x-1">
+                      <span className="inline-block w-2 h-2 bg-orange-500 rounded-full"></span>
+                      <span className="font-medium">{t('Support')}:</span>
+                      <span className="text-gray-600">{event.narrative.support_count}</span>
+                    </div>
+                  )}
+                </div>
+              )}
               
               {event.related_articles && event.related_articles.length > 0 && (
-                <div className="mt-2">
+                <div className="mt-3">
                   <details className="text-xs text-gray-500">
-                    <summary className="cursor-pointer hover:text-gray-700">
-                      {event.related_articles.length} related articles
+                    <summary className="cursor-pointer hover:text-gray-700 flex items-center space-x-1">
+                      <span>{event.related_articles.length} {t('related articles')}</span>
+                      {event.narrative?.unique_sources_count && (
+                        <span className="text-gray-400">{t('from')} {event.narrative.unique_sources_count} {t('sources')}</span>
+                      )}
                     </summary>
-                    <div className="mt-1 space-y-1">
-                      {event.related_articles.slice(0, 3).map((article, idx) => (
-                        <div key={idx} className="pl-2 border-l border-gray-200">
+                    <div className="mt-2 space-y-2">
+                      {event.related_articles.slice(0, 5).map((article, idx) => (
+                        <div key={idx} className="pl-3 border-l-2 border-gray-200 bg-gray-50 p-2 rounded">
                           <a
                             href={article.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-800 underline"
+                            className="text-blue-600 hover:text-blue-800 underline text-sm font-medium block"
                           >
                             {article.title}
                           </a>
-                          <span className="ml-1 text-gray-400">({article.source})</span>
+                          <div className="flex items-center justify-between mt-1">
+                            <span className="text-gray-500 text-xs">{article.source}</span>
+                            <span className="text-gray-400 text-xs">
+                              {new Date(article.published_date).toLocaleDateString()}
+                            </span>
+                          </div>
                         </div>
                       ))}
+                      {event.related_articles.length > 5 && (
+                        <p className="text-xs text-gray-400 pl-3">
+                          {t('...and')} {event.related_articles.length - 5} {t('more articles')}
+                        </p>
+                      )}
                     </div>
                   </details>
                 </div>
@@ -117,9 +167,9 @@ function Timeline({ events, pagination, onLoadMore, loadingMore }) {
         <div className="mt-8 pt-6 border-t border-gray-200">
           <div className="flex items-center justify-between">
             <div className="text-sm text-gray-500">
-              Showing {events.length} of {pagination.totalCount} events
+              {t('Showing')} {events.length} {t('of')} {pagination.totalCount} {t('events')}
               {pagination.currentPage > 1 && (
-                <span> (Page {pagination.currentPage} of {pagination.totalPages})</span>
+                <span> ({t('Page')} {pagination.currentPage} {t('of')} {pagination.totalPages})</span>
               )}
             </div>
             
@@ -136,10 +186,10 @@ function Timeline({ events, pagination, onLoadMore, loadingMore }) {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      Loading...
+                      {t('Loading...')}
                     </span>
                   ) : (
-                    'Load More Events'
+                    t('Load More Events')
                   )}
                 </button>
               )}

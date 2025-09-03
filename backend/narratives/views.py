@@ -12,18 +12,18 @@ class TimelinePagination(PageNumberPagination):
 
 
 class NarrativeListView(generics.ListAPIView):
-    queryset = Narrative.objects.filter(is_active=True)
+    queryset = Narrative.objects.filter(is_active=True, support_count__gt=0)
     serializer_class = NarrativeSerializer
-    ordering = ['-created_at']
+    ordering = ['-support_count', '-created_at']  # Order by relevance first, then by creation date
 
 
 class TimelineView(generics.ListAPIView):
-    queryset = TimelineEvent.objects.all()
+    queryset = TimelineEvent.objects.filter(narrative__support_count__gt=0)
     serializer_class = TimelineEventSerializer
     pagination_class = TimelinePagination
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = ['event_type', 'narrative']
-    ordering = ['-event_date']
+    ordering = ['-significance_score', '-event_date']  # Order by significance first
 
 
 class NarrativeClusterListView(generics.ListAPIView):

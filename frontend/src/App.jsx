@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import axios from 'axios'
 import Timeline from './components/Timeline'
 
 const API_BASE = 'http://localhost:8000/api'
 
 function App() {
+  const { t, i18n } = useTranslation()
   const [timelineData, setTimelineData] = useState([])
   const [narratives, setNarratives] = useState([])
   const [loading, setLoading] = useState(true)
@@ -45,7 +47,7 @@ function App() {
       
       setError(null)
     } catch (err) {
-      setError('Failed to fetch timeline data. Make sure the backend is running.')
+      setError(t('Failed to fetch timeline data. Make sure the backend is running.'))
       console.error('Error fetching timeline data:', err)
     } finally {
       setLoading(false)
@@ -78,7 +80,7 @@ function App() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading narrative data...</p>
+          <p className="mt-4 text-gray-600">{t('Loading narrative data...')}</p>
         </div>
       </div>
     )
@@ -88,7 +90,7 @@ function App() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="text-red-600 text-xl mb-4">Error</div>
+          <div className="text-red-600 text-xl mb-4">{t('Error')}</div>
           <p className="text-gray-600">{error}</p>
         </div>
       </div>
@@ -99,8 +101,26 @@ function App() {
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <h1 className="text-2xl font-bold text-gray-900">Narrative Drift Radar</h1>
-          <p className="text-gray-600 mt-1">Tracking narrative shifts in real-time</p>
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">{t('Narrative Drift Radar')}</h1>
+              <p className="text-gray-600 mt-1">{t('Tracking narrative shifts in real-time')}</p>
+            </div>
+            <div className="flex space-x-2">
+              <button 
+                onClick={() => i18n.changeLanguage('uk')}
+                className={`px-3 py-1 rounded text-sm font-medium ${i18n.language === 'uk' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+              >
+                УК
+              </button>
+              <button 
+                onClick={() => i18n.changeLanguage('en')}
+                className={`px-3 py-1 rounded text-sm font-medium ${i18n.language === 'en' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+              >
+                EN
+              </button>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -109,10 +129,10 @@ function App() {
           <div className="lg:col-span-2">
             <div className="bg-white rounded-lg shadow-sm border p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-gray-900">Narrative Timeline</h2>
+                <h2 className="text-xl font-semibold text-gray-900">{t('Narrative Timeline')}</h2>
                 {timelinePagination.totalCount > 0 && (
                   <span className="text-sm text-gray-500">
-                    {timelinePagination.totalCount} total events
+                    {timelinePagination.totalCount} {t('total events')}
                   </span>
                 )}
               </div>
@@ -127,9 +147,9 @@ function App() {
           
           <div className="space-y-6">
             <div className="bg-white rounded-lg shadow-sm border p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Active Narratives</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('Active Narratives')}</h3>
               {narratives.length === 0 ? (
-                <p className="text-gray-500 text-sm">No active narratives found.</p>
+                <p className="text-gray-500 text-sm">{t('No active narratives found.')}</p>
               ) : (
                 <div className="space-y-3">
                   {narratives.slice(0, 5).map((narrative) => (
