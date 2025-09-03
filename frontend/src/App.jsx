@@ -8,27 +8,66 @@ function App() {
   const [timelineData, setTimelineData] = useState([])
   const [narratives, setNarratives] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState(null)
+  const [timelinePagination, setTimelinePagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    hasNext: false,
+    hasPrevious: false,
+    totalCount: 0
+  })
+
+  const fetchTimelineData = async (page = 1, append = false) => {
+    try {
+      if (!append) setLoading(true)
+      else setLoadingMore(true)
+      
+      const timelineRes = await axios.get(`${API_BASE}/timeline/?page=${page}`)
+      const timelineResponse = timelineRes.data
+      
+      const newEvents = timelineResponse.results || []
+      
+      if (append) {
+        setTimelineData(prev => [...prev, ...newEvents])
+      } else {
+        setTimelineData(newEvents)
+      }
+      
+      // Update pagination info
+      setTimelinePagination({
+        currentPage: page,
+        totalPages: Math.ceil(timelineResponse.count / 20),
+        hasNext: !!timelineResponse.next,
+        hasPrevious: !!timelineResponse.previous,
+        totalCount: timelineResponse.count || 0
+      })
+      
+      setError(null)
+    } catch (err) {
+      setError('Failed to fetch timeline data. Make sure the backend is running.')
+      console.error('Error fetching timeline data:', err)
+    } finally {
+      setLoading(false)
+      setLoadingMore(false)
+    }
+  }
+
+  const fetchNarratives = async () => {
+    try {
+      const narrativesRes = await axios.get(`${API_BASE}/narratives/`)
+      setNarratives(narrativesRes.data.results || narrativesRes.data)
+    } catch (err) {
+      console.error('Error fetching narratives:', err)
+    }
+  }
 
   useEffect(() => {
     const fetchData = async () => {
-      try {
-        setLoading(true)
-        
-        const [timelineRes, narrativesRes] = await Promise.all([
-          axios.get(`${API_BASE}/timeline/`),
-          axios.get(`${API_BASE}/narratives/`)
-        ])
-        
-        setTimelineData(timelineRes.data.results || timelineRes.data)
-        setNarratives(narrativesRes.data.results || narrativesRes.data)
-        setError(null)
-      } catch (err) {
-        setError('Failed to fetch data. Make sure the backend is running.')
-        console.error('Error fetching data:', err)
-      } finally {
-        setLoading(false)
-      }
+      await Promise.all([
+        fetchTimelineData(1),
+        fetchNarratives()
+      ])
     }
 
     fetchData()
@@ -69,8 +108,20 @@ function App() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
             <div className="bg-white rounded-lg shadow-sm border p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Narrative Timeline</h2>
-              <Timeline events={timelineData} />
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold text-gray-900">Narrative Timeline</h2>
+                {timelinePagination.totalCount > 0 && (
+                  <span className="text-sm text-gray-500">
+                    {timelinePagination.totalCount} total events
+                  </span>
+                )}
+              </div>
+              <Timeline 
+                events={timelineData} 
+                pagination={timelinePagination}
+                onLoadMore={() => fetchTimelineData(timelinePagination.currentPage + 1, true)}
+                loadingMore={loadingMore}
+              />
             </div>
           </div>
           

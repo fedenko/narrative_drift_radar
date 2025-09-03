@@ -1,7 +1,14 @@
 from rest_framework import generics, filters
+from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Narrative, NarrativeCluster, TimelineEvent
 from .serializers import NarrativeSerializer, NarrativeClusterSerializer, TimelineEventSerializer
+
+
+class TimelinePagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 
 
 class NarrativeListView(generics.ListAPIView):
@@ -13,6 +20,7 @@ class NarrativeListView(generics.ListAPIView):
 class TimelineView(generics.ListAPIView):
     queryset = TimelineEvent.objects.all()
     serializer_class = TimelineEventSerializer
+    pagination_class = TimelinePagination
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = ['event_type', 'narrative']
     ordering = ['-event_date']
