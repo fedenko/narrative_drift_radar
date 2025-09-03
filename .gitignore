@@ -5,3 +5,4 @@
 *_fixture.json
 *.pdf
 *.parquet
+*_fixture.jsonl
